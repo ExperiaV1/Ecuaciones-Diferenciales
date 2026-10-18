@@ -22,7 +22,7 @@ namespace Ecuaciones_Diferenciales
         {
             this.Text = "Simulación de Circuito RC con Diodo - Método de Euler";
 
-            // 1. Cargar valores sugeridos de la página 3 del PDF por defecto
+            // Cargar valores sugeridos 
             txtVs.Text = "5";       // 5 V
             txtR.Text = "1000";     // 1 kΩ = 1000 Ω
             txtC.Text = "1000";     // 1000 µF
@@ -34,17 +34,17 @@ namespace Ecuaciones_Diferenciales
             txtTf.Text = "5";       // Tiempo final = 5 s
             txtH.Text = "0.01";     // Paso h = 0.01 s
 
-            // 2. Configurar el ComboBox de modelo
+            // 2. Configurar el ComboBox 
             cmbModelo.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbModelo.Items.Clear();
-            cmbModelo.Items.Add("Ecuación del Documento");
-            cmbModelo.Items.Add("Circuito Serie Real");
+            cmbModelo.Items.Add("Ecuación Teorica");
+            cmbModelo.Items.Add("Circuito Serie ");
             cmbModelo.SelectedIndex = 0;
 
-            // 3. Configurar la tabla de iteraciones (dgvEuler)
-            dgvEuler.AutoGenerateColumns = true;
-            dgvEuler.ReadOnly = true;
-            dgvEuler.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            // 3. Configurar la tabla de iteraciones (dgvEule)
+            dgvEule.AutoGenerateColumns = true;
+            dgvEule.ReadOnly = true;
+            dgvEule.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
             // 4. Configurar la tabla experimental (dgvExperimental)
             dgvExperimental.Columns.Clear();
@@ -64,7 +64,6 @@ namespace Ecuaciones_Diferenciales
                 dgvExperimental.Rows.Add(t.ToString("0.0", CultureInfo.InvariantCulture), "", "", "");
             }
 
-            // Cuando edites un voltaje en la tabla experimental, recalcula el error automáticamente
             dgvExperimental.CellEndEdit += (s, e) => ActualizarTablaExperimental();
         }
 
@@ -72,9 +71,9 @@ namespace Ecuaciones_Diferenciales
         {
             if (!usarModeloReal)
             {
-                // Ecuación de la página 3 del documento:
+                // Ecuación 
                 double iR = (vs - vc) / rOhms;
-                double exponente = Math.Min(vc / (n * vt), 50.0); // Evita desbordamiento a infinito
+                double exponente = Math.Min(vc / (n * vt), 50.0);
                 double iD = iS * (Math.Exp(exponente) - 1.0);
                 return (1.0 / cFaradios) * (iR - iD);
             }
@@ -136,9 +135,9 @@ namespace Ecuaciones_Diferenciales
                 double h = LeerNumero(txtH.Text);
                 _ultimaSimulacion = EjecutarEuler(h);
 
-                // 1. Llenar la tabla de iteraciones (Punto 8)
-                dgvEuler.DataSource = null;
-                dgvEuler.DataSource = _ultimaSimulacion;
+                // 1. Llenar la tabla de iteraciones
+                dgvEule.DataSource = null;
+                dgvEule.DataSource = _ultimaSimulacion;
 
                 // 2. Graficar en formsPlot1
                 formsPlot1.Plot.Clear();
@@ -156,7 +155,7 @@ namespace Ecuaciones_Diferenciales
                 formsPlot1.Plot.Axes.AutoScale();
                 formsPlot1.Refresh();
 
-                // 3. Actualizar la tabla experimental (Punto 9)
+                // 3. Actualizar la tabla experimental
                 ActualizarTablaExperimental();
             }
             catch (Exception ex)
