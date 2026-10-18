@@ -334,7 +334,7 @@
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(339, 309);
+            tabPage2.Size = new Size(434, 366);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Tabla de Iteraciones";
             tabPage2.UseVisualStyleBackColor = true;
@@ -345,7 +345,7 @@
             dgvEule.Dock = DockStyle.Fill;
             dgvEule.Location = new Point(3, 3);
             dgvEule.Name = "dgvEule";
-            dgvEule.Size = new Size(333, 303);
+            dgvEule.Size = new Size(428, 360);
             dgvEule.TabIndex = 0;
             // 
             // tabPage3
@@ -353,7 +353,7 @@
             tabPage3.Controls.Add(splitContainer1);
             tabPage3.Location = new Point(4, 24);
             tabPage3.Name = "tabPage3";
-            tabPage3.Size = new Size(339, 309);
+            tabPage3.Size = new Size(434, 366);
             tabPage3.TabIndex = 2;
             tabPage3.Text = "Datos Experimentales";
             tabPage3.UseVisualStyleBackColor = true;
@@ -372,8 +372,8 @@
             // 
             splitContainer1.Panel2.Controls.Add(picFoto);
             splitContainer1.Panel2.Controls.Add(btnCargarFoto);
-            splitContainer1.Size = new Size(339, 309);
-            splitContainer1.SplitterDistance = 170;
+            splitContainer1.Size = new Size(434, 366);
+            splitContainer1.SplitterDistance = 217;
             splitContainer1.TabIndex = 0;
             // 
             // dgvExperimental
@@ -382,15 +382,17 @@
             dgvExperimental.Dock = DockStyle.Left;
             dgvExperimental.Location = new Point(0, 0);
             dgvExperimental.Name = "dgvExperimental";
-            dgvExperimental.Size = new Size(167, 309);
+            dgvExperimental.Size = new Size(215, 366);
             dgvExperimental.TabIndex = 0;
             // 
             // picFoto
             // 
             picFoto.Dock = DockStyle.Fill;
+            picFoto.Image = Properties.Resources.WhatsApp_Image_2026_10_16_at_12_25_04;
             picFoto.Location = new Point(0, 23);
             picFoto.Name = "picFoto";
-            picFoto.Size = new Size(165, 286);
+            picFoto.Size = new Size(213, 343);
+            picFoto.SizeMode = PictureBoxSizeMode.Zoom;
             picFoto.TabIndex = 1;
             picFoto.TabStop = false;
             // 
@@ -399,7 +401,7 @@
             btnCargarFoto.Dock = DockStyle.Top;
             btnCargarFoto.Location = new Point(0, 0);
             btnCargarFoto.Name = "btnCargarFoto";
-            btnCargarFoto.Size = new Size(165, 23);
+            btnCargarFoto.Size = new Size(213, 23);
             btnCargarFoto.TabIndex = 0;
             btnCargarFoto.Text = "Cargar foto";
             btnCargarFoto.UseVisualStyleBackColor = true;
