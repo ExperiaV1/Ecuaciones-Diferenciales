@@ -11,7 +11,7 @@ namespace Ecuaciones_Diferenciales
     public partial class Form1 : Form
     {
         private List<IteracionEuler> _ultimaSimulacion = new();
-        private DataGridView _tablaEuler = null!; // Referencia segura al DataGridView de iteraciones
+        private DataGridView _tablaEuler = null!; 
 
         public Form1()
         {
@@ -21,28 +21,35 @@ namespace Ecuaciones_Diferenciales
 
         private void InicializarValoresYTablas()
         {
-            this.Text = "Simulación de Circuito RC con Diodo - Método de Euler";
+            //this.Text = "Simulación Numérica - Método de Euler";
 
-            // 1. Cargar valores sugeridos 
-            txtVs.Text = "5";       // 5 V
-            txtR.Text = "1000";     // 1 kΩ = 1000 Ω
-            txtC.Text = "1000";     // 1000 µF
-            txtIs.Text = "1E-12";   // 10^-12 A
-            txtN.Text = "1.5";      // Factor de idealidad (1 a 2)
-            txtVt.Text = "0.02585"; // Voltaje térmico (V)
-            txtVc0.Text = "0";      // Condición inicial Vc(0) = 0 V
-            txtT0.Text = "0";       // Tiempo inicial = 0 s
-            txtTf.Text = "5";       // Tiempo final = 5 s
-            txtH.Text = "0.01";     // Paso h = 0.01 s
+            // 1. Cargar valores sugeridos por defecto para el circuito RC
+            CargarValoresCircuitoRC();
 
-            // 2. Configurar el ComboBox 
+            // 2. Configurar el ComboBox con las 3 opciones
             cmbModelo.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbModelo.Items.Clear();
             cmbModelo.Items.Add("Ecuación Teórica");
             cmbModelo.Items.Add("Circuito Serie");
+            cmbModelo.Items.Add("ejericio ");
             cmbModelo.SelectedIndex = 0;
 
-            // 3. Configurar la tabla de iteracionesw
+            cmbModelo.SelectedIndexChanged += (s, e) =>
+            {
+                if (cmbModelo.SelectedIndex == 2)
+                {
+                    txtVc0.Text = "1";   // y(1) = 1 -> y0 = 1
+                    txtT0.Text = "1";    // x0 = 1
+                    txtTf.Text = "1.5";  // Evaluar hasta x = 1.5
+                    txtH.Text = "0.1";   // Primer paso h = 0.1
+                }
+                else
+                {
+                    CargarValoresCircuitoRC();
+                }
+            };
+
+            // 3. Configurar la tabla de iteraciones (dgvEule) de forma segura
             _tablaEuler = ObtenerOCrearTabla(dgvEule);
             _tablaEuler.AutoGenerateColumns = true;
             _tablaEuler.ReadOnly = true;
@@ -55,11 +62,12 @@ namespace Ecuaciones_Diferenciales
             dgvExperimental.Columns.Add("Experimental", "Experimental (V)");
             dgvExperimental.Columns.Add("Error", "Error (%)");
 
+
             dgvExperimental.Columns["Euler"].ReadOnly = true;
             dgvExperimental.Columns["Error"].ReadOnly = true;
             dgvExperimental.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
-            // Matriz de formato: { Tiempo (s), Voltaje Experimental (V) }
+            // Datos experimentales medidos en el circuito para la presentación final
             double[,] datosOsciloscopio = {
                 { 0.00, 0.000 },
                 { 0.01, 0.048 },
@@ -79,14 +87,27 @@ namespace Ecuaciones_Diferenciales
             {
                 string t = datosOsciloscopio[i, 0].ToString("0.00", CultureInfo.InvariantCulture);
                 string vExp = datosOsciloscopio[i, 1].ToString("0.000", CultureInfo.InvariantCulture);
-
                 dgvExperimental.Rows.Add(t, "", vExp, "");
             }
 
             dgvExperimental.CellEndEdit += (s, e) => ActualizarTablaExperimental();
         }
 
-        // Método auxiliar que evita los errores 
+        private void CargarValoresCircuitoRC()
+        {
+            txtVs.Text = "5";       // 5 V
+            txtR.Text = "1000";     // 1 kΩ = 1000 Ω
+            txtC.Text = "1000";     // 1000 µF
+            txtIs.Text = "1E-12";   // 10^-12 A
+            txtN.Text = "1.5";      // Factor de idealidad (1 a 2)
+            txtVt.Text = "0.02585"; // Voltaje térmico (V)
+            txtVc0.Text = "0";      // Condición inicial Vc(0) = 0 V
+            txtT0.Text = "0";       // Tiempo inicial = 0 s
+            txtTf.Text = "5";       // Tiempo final = 5 s
+            txtH.Text = "0.01";     // Paso h = 0.01 s
+        }
+
+        // Detecta si dgvEule es un DataGridView o una pestaña (TabPage) y evita errores
         private DataGridView ObtenerOCrearTabla(Control control)
         {
             if (control is DataGridView dgvExistente)
@@ -97,22 +118,28 @@ namespace Ecuaciones_Diferenciales
             return nuevaTabla;
         }
 
-        private double CalcularDerivada(double vc, double vs, double rOhms, double cFaradios, double iS, double n, double vt, bool usarModeloReal)
+        // Cálculo de la derivada f(t, Vc) o f(x, y) según la opción elegida
+        private double CalcularDerivada(double t, double vc, double vs, double rOhms, double cFaradios, double iS, double n, double vt, int indiceModelo)
         {
-            if (!usarModeloReal)
+            if (indiceModelo == 0)
             {
-                // Ecuación Teórica Completa
+                // Opción 0: Ecuación Teórica del PDF
                 double iR = (vs - vc) / rOhms;
                 double exponente = Math.Min(vc / (n * vt), 50.0);
                 double iD = iS * (Math.Exp(exponente) - 1.0);
                 return (1.0 / cFaradios) * (iR - iD);
             }
-            else
+            else if (indiceModelo == 1)
             {
-                // Modelo serie real simplificado (Vs -> R -> D -> C)
+                // Opción 1: Modelo serie real (Vs -> R -> D -> C)
                 if (vs <= vc) return 0;
                 double vdEstimado = Math.Min(0.7, vs - vc);
                 return (vs - vdEstimado - vc) / (rOhms * cFaradios);
+            }
+            else
+            {
+                // Opción 2: Ejercicio matemático y' = 0.2 * x * y (donde t = x, vc = y)
+                return 0.2 * t * vc;
             }
         }
 
@@ -130,7 +157,7 @@ namespace Ecuaciones_Diferenciales
             double t0 = LeerNumero(txtT0.Text);
             double tf = LeerNumero(txtTf.Text);
 
-            bool usarModeloReal = cmbModelo.SelectedIndex == 1;
+            int indiceModelo = cmbModelo.SelectedIndex;
 
             var lista = new List<IteracionEuler>();
             int iteracion = 0;
@@ -138,7 +165,7 @@ namespace Ecuaciones_Diferenciales
 
             while (t <= tf + (pasoH / 2.0))
             {
-                double f = CalcularDerivada(vc, vs, rOhms, cFaradios, iS, n, vt, usarModeloReal);
+                double f = CalcularDerivada(t, vc, vs, rOhms, cFaradios, iS, n, vt, indiceModelo);
                 double vcSiguiente = vc + pasoH * f;
 
                 lista.Add(new IteracionEuler
@@ -158,6 +185,7 @@ namespace Ecuaciones_Diferenciales
             return lista;
         }
 
+        // BOTÓN SIMULAR
         private void btnSimular_Click(object sender, EventArgs e)
         {
             try
@@ -165,7 +193,7 @@ namespace Ecuaciones_Diferenciales
                 double h = LeerNumero(txtH.Text);
                 _ultimaSimulacion = EjecutarEuler(h);
 
-                // 1. Llenar la tabla de iteraciones 
+                // 1. Llenar la tabla de iteraciones
                 _tablaEuler.DataSource = null;
                 _tablaEuler.DataSource = _ultimaSimulacion;
 
@@ -175,18 +203,28 @@ namespace Ecuaciones_Diferenciales
                 double[] ys = _ultimaSimulacion.Select(x => x.Vc_n).ToArray();
 
                 var curva = formsPlot1.Plot.Add.Scatter(xs, ys);
-                curva.LegendText = $"Euler (h = {h} s)";
+                curva.LegendText = $"Euler (h = {h})";
                 curva.LineWidth = 2;
 
-                formsPlot1.Plot.Title("Evolución Temporal del Voltaje en el Capacitor Vc(t)");
-                formsPlot1.Plot.XLabel("Tiempo t (s)");
-                formsPlot1.Plot.YLabel("Voltaje Vc (V)");
+                if (cmbModelo.SelectedIndex == 2)
+                {
+                    formsPlot1.Plot.Title("Solución Numérica de y' = 0.2xy con y(1) = 1");
+                    formsPlot1.Plot.XLabel("Variable independiente x");
+                    formsPlot1.Plot.YLabel("Variable dependiente y(x)");
+                }
+                else
+                {
+                    formsPlot1.Plot.Title("Evolución Temporal del Voltaje en el Capacitor Vc(t)");
+                    formsPlot1.Plot.XLabel("Tiempo t (s)");
+                    formsPlot1.Plot.YLabel("Voltaje Vc (V)");
+
+                    // Solo superpone los puntos del osciloscopio cuando estamos en los modelos del circuito
+                    ActualizarTablaExperimental();
+                }
+
                 formsPlot1.Plot.ShowLegend();
                 formsPlot1.Plot.Axes.AutoScale();
                 formsPlot1.Refresh();
-
-                // 3. Actualizar la tabla experimental
-                ActualizarTablaExperimental();
             }
             catch (Exception ex)
             {
@@ -195,11 +233,16 @@ namespace Ecuaciones_Diferenciales
             }
         }
 
+        // BOTÓN COMPARAR PASOS h
         private void btnCompararH_Click(object sender, EventArgs e)
         {
             try
             {
-                double[] pasos = { 0.1, 0.01, 0.001 };
+                // Si está elegido el ejercicio y' = 0.2xy, compara h = 0.1 y h = 0.05 como pide el enunciado
+                double[] pasos = cmbModelo.SelectedIndex == 2
+                    ? new double[] { 0.1, 0.05  }
+                    : new double[] { 0.1, 0.01, 0.001 };
+
                 formsPlot1.Plot.Clear();
 
                 foreach (double h in pasos)
@@ -209,14 +252,24 @@ namespace Ecuaciones_Diferenciales
                     double[] ys = datos.Select(x => x.Vc_n).ToArray();
 
                     var scatter = formsPlot1.Plot.Add.Scatter(xs, ys);
-                    scatter.LegendText = $"Paso h = {h} s";
-                    scatter.MarkerSize = 0;
+                    scatter.LegendText = $"Paso h = {h}";
+                    scatter.MarkerSize = 5;
                     scatter.LineWidth = 2;
                 }
 
-                formsPlot1.Plot.Title("Comparación del Método de Euler con distintos pasos h");
-                formsPlot1.Plot.XLabel("Tiempo t (s)");
-                formsPlot1.Plot.YLabel("Voltaje Vc (V)");
+                if (cmbModelo.SelectedIndex == 2)
+                {
+                    formsPlot1.Plot.Title("Comparación de y' = 0.2xy para h = 0.1 y h = 0.05");
+                    formsPlot1.Plot.XLabel("x");
+                    formsPlot1.Plot.YLabel("y(x)");
+                }
+                else
+                {
+                    formsPlot1.Plot.Title("Comparación del Método de Euler con distintos pasos h");
+                    formsPlot1.Plot.XLabel("Tiempo t (s)");
+                    formsPlot1.Plot.YLabel("Voltaje Vc (V)");
+                }
+
                 formsPlot1.Plot.ShowLegend();
                 formsPlot1.Plot.Axes.AutoScale();
                 formsPlot1.Refresh();
@@ -265,7 +318,7 @@ namespace Ecuaciones_Diferenciales
                 }
             }
 
-            if (tiemposExp.Count > 0)
+            if (tiemposExp.Count > 0 && cmbModelo.SelectedIndex != 2)
             {
                 var puntos = formsPlot1.Plot.Add.Scatter(tiemposExp.ToArray(), voltajesExp.ToArray());
                 puntos.LegendText = "Puntos Experimentales (DAQ)";
