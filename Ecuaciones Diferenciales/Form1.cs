@@ -5,24 +5,25 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Ecuaciones_Diferenciales
 {
     public partial class Form1 : Form
     {
         private List<IteracionEuler> _ultimaSimulacion = new();
+        private DataGridView _tablaEuler = null!; // Referencia segura al DataGridView de iteraciones
 
         public Form1()
         {
             InitializeComponent();
             InicializarValoresYTablas();
         }
+
         private void InicializarValoresYTablas()
         {
             this.Text = "Simulación de Circuito RC con Diodo - Método de Euler";
 
-            // Cargar valores sugeridos 
+            // 1. Cargar valores sugeridos 
             txtVs.Text = "5";       // 5 V
             txtR.Text = "1000";     // 1 kΩ = 1000 Ω
             txtC.Text = "1000";     // 1000 µF
@@ -37,14 +38,15 @@ namespace Ecuaciones_Diferenciales
             // 2. Configurar el ComboBox 
             cmbModelo.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbModelo.Items.Clear();
-            cmbModelo.Items.Add("Ecuación Teorica");
-            cmbModelo.Items.Add("Circuito Serie ");
+            cmbModelo.Items.Add("Ecuación Teórica");
+            cmbModelo.Items.Add("Circuito Serie");
             cmbModelo.SelectedIndex = 0;
 
-            // 3. Configurar la tabla de iteraciones (dgvEule)
-            dgvEule.AutoGenerateColumns = true;
-            dgvEule.ReadOnly = true;
-            dgvEule.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            // 3. Configurar la tabla de iteracionesw
+            _tablaEuler = ObtenerOCrearTabla(dgvEule);
+            _tablaEuler.AutoGenerateColumns = true;
+            _tablaEuler.ReadOnly = true;
+            _tablaEuler.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
             // 4. Configurar la tabla experimental (dgvExperimental)
             dgvExperimental.Columns.Clear();
@@ -57,39 +59,49 @@ namespace Ecuaciones_Diferenciales
             dgvExperimental.Columns["Error"].ReadOnly = true;
             dgvExperimental.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
-            // Tiempos de muestra para comparar con tu circuito real
             // Matriz de formato: { Tiempo (s), Voltaje Experimental (V) }
             double[,] datosOsciloscopio = {
-                { 0.0, 0.00 },
-                { 0.1, 0.46 },
-                { 0.2, 0.82 },
-                { 0.3, 1.10 },
-                { 0.5, 1.55 },
-                { 1.0, 2.45 },
-                { 2.0, 3.60 },
-                { 3.0, 4.05 },
-                { 4.0, 4.25 },
-                { 5.0, 4.30 }
+                { 0.00, 0.000 },
+                { 0.01, 0.048 },
+                { 0.02, 0.095 },
+                { 0.03, 0.141 },
+                { 0.04, 0.185 },
+                { 0.05, 0.230 },
+                { 0.06, 0.273 },
+                { 0.10, 0.432 },
+                { 0.50, 1.550 },
+                { 1.00, 2.450 },
+                { 2.00, 3.600 },
+                { 5.00, 4.300 }
             };
 
             for (int i = 0; i < datosOsciloscopio.GetLength(0); i++)
             {
-                string t = datosOsciloscopio[i, 0].ToString("0.0", CultureInfo.InvariantCulture);
-                string vExp = datosOsciloscopio[i, 1].ToString("0.00", CultureInfo.InvariantCulture);
+                string t = datosOsciloscopio[i, 0].ToString("0.00", CultureInfo.InvariantCulture);
+                string vExp = datosOsciloscopio[i, 1].ToString("0.000", CultureInfo.InvariantCulture);
 
-                // Agregamos el Tiempo y el Voltaje Experimental. Euler y Error se calculan al simular.
                 dgvExperimental.Rows.Add(t, "", vExp, "");
             }
 
             dgvExperimental.CellEndEdit += (s, e) => ActualizarTablaExperimental();
         }
 
+        // Método auxiliar que evita los errores 
+        private DataGridView ObtenerOCrearTabla(Control control)
+        {
+            if (control is DataGridView dgvExistente)
+                return dgvExistente;
+
+            var nuevaTabla = new DataGridView { Dock = DockStyle.Fill };
+            control.Controls.Add(nuevaTabla);
+            return nuevaTabla;
+        }
 
         private double CalcularDerivada(double vc, double vs, double rOhms, double cFaradios, double iS, double n, double vt, bool usarModeloReal)
         {
             if (!usarModeloReal)
             {
-                // Ecuación 
+                // Ecuación Teórica Completa
                 double iR = (vs - vc) / rOhms;
                 double exponente = Math.Min(vc / (n * vt), 50.0);
                 double iD = iS * (Math.Exp(exponente) - 1.0);
@@ -97,7 +109,7 @@ namespace Ecuaciones_Diferenciales
             }
             else
             {
-                // Modelo serie real (Vs -> R -> D -> C)
+                // Modelo serie real simplificado (Vs -> R -> D -> C)
                 if (vs <= vc) return 0;
                 double vdEstimado = Math.Min(0.7, vs - vc);
                 return (vs - vdEstimado - vc) / (rOhms * cFaradios);
@@ -153,9 +165,9 @@ namespace Ecuaciones_Diferenciales
                 double h = LeerNumero(txtH.Text);
                 _ultimaSimulacion = EjecutarEuler(h);
 
-                // 1. Llenar la tabla de iteraciones
-                dgvEule.DataSource = null;
-                dgvEule.DataSource = _ultimaSimulacion;
+                // 1. Llenar la tabla de iteraciones 
+                _tablaEuler.DataSource = null;
+                _tablaEuler.DataSource = _ultimaSimulacion;
 
                 // 2. Graficar en formsPlot1
                 formsPlot1.Plot.Clear();
@@ -214,6 +226,7 @@ namespace Ecuaciones_Diferenciales
                 MessageBox.Show("Error al comparar pasos: " + ex.Message);
             }
         }
+
         private void ActualizarTablaExperimental()
         {
             if (_ultimaSimulacion.Count == 0) return;
@@ -241,6 +254,11 @@ namespace Ecuaciones_Diferenciales
                             double errorPorcentual = Math.Abs((vExp - puntoEuler.Vc_n) / vExp) * 100.0;
                             fila.Cells["Error"].Value = errorPorcentual.ToString("F2") + " %";
                         }
+                        else if (vExp == 0 && puntoEuler.Vc_n == 0)
+                        {
+                            fila.Cells["Error"].Value = "0.00 %";
+                        }
+
                         tiemposExp.Add(tBuscado);
                         voltajesExp.Add(vExp);
                     }
@@ -250,18 +268,21 @@ namespace Ecuaciones_Diferenciales
             if (tiemposExp.Count > 0)
             {
                 var puntos = formsPlot1.Plot.Add.Scatter(tiemposExp.ToArray(), voltajesExp.ToArray());
-                puntos.LegendText = "Experimental";
+                puntos.LegendText = "Puntos Experimentales (DAQ)";
                 puntos.LineWidth = 0;
                 puntos.MarkerSize = 8;
                 formsPlot1.Plot.ShowLegend();
+                formsPlot1.Plot.Axes.AutoScale();
                 formsPlot1.Refresh();
             }
         }
+
         private double LeerNumero(string texto)
         {
             return double.Parse(texto.Trim().Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture);
         }
     }
+
     public class IteracionEuler
     {
         public int n { get; set; }
