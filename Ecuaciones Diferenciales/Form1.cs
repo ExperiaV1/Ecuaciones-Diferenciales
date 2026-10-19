@@ -58,14 +58,32 @@ namespace Ecuaciones_Diferenciales
             dgvExperimental.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
             // Tiempos de muestra para comparar con tu circuito real
-            double[] tiemposEjemplo = { 0.0, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0 };
-            foreach (double t in tiemposEjemplo)
+            // Matriz de formato: { Tiempo (s), Voltaje Experimental (V) }
+            double[,] datosOsciloscopio = {
+                { 0.0, 0.00 },
+                { 0.1, 0.46 },
+                { 0.2, 0.82 },
+                { 0.3, 1.10 },
+                { 0.5, 1.55 },
+                { 1.0, 2.45 },
+                { 2.0, 3.60 },
+                { 3.0, 4.05 },
+                { 4.0, 4.25 },
+                { 5.0, 4.30 }
+            };
+
+            for (int i = 0; i < datosOsciloscopio.GetLength(0); i++)
             {
-                dgvExperimental.Rows.Add(t.ToString("0.0", CultureInfo.InvariantCulture), "", "", "");
+                string t = datosOsciloscopio[i, 0].ToString("0.0", CultureInfo.InvariantCulture);
+                string vExp = datosOsciloscopio[i, 1].ToString("0.00", CultureInfo.InvariantCulture);
+
+                // Agregamos el Tiempo y el Voltaje Experimental. Euler y Error se calculan al simular.
+                dgvExperimental.Rows.Add(t, "", vExp, "");
             }
 
             dgvExperimental.CellEndEdit += (s, e) => ActualizarTablaExperimental();
         }
+
 
         private double CalcularDerivada(double vc, double vs, double rOhms, double cFaradios, double iS, double n, double vt, bool usarModeloReal)
         {
